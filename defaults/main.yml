@@ -1,0 +1,6 @@
+
+# this variable needs to be defined
+bamboo_capabilities: {}
+
+# this variable needs to be defined
+cmake_installation: {}
