@@ -50,5 +50,5 @@ galaxy_info:
   - cmake
 
 dependencies:
-  - raffienficiaud.ansible-atlassian-bambooagent-role
-  - raffienficiaud.ansible-atlassian-bambooagent-install-dmg-role
+  - ansible-atlassian-bambooagent-role
+  - ansible-atlassian-bambooagent-install-dmg-role
