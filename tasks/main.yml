@@ -33,10 +33,22 @@
 #
 - block:
 
-  - name: '[CMAKE] install osx - DMG'
-    include: ../../bamboo-agent-install-dmg/tasks/main.yml
-    dmg_to_install:
-      - "{{ cmake_installation }}"
+  #- name: '[CMAKE] install osx - DMG'
+  #  include: ../../bamboo-agent-install-dmg/tasks/main.yml
+  #  dmg_to_install:
+  #    - "{{ cmake_installation }}"
+  #  when: "{{ cmake_version_output_osx.stdout_lines[0] | regex_replace('cmake version (.*)$', '\\1') | version_compare('%d.%d' % (cmake_installation.version.major, cmake_installation.version.minor), '<') }}"
+
+  #- name: "[JAVA] Installs CMake from DMG"
+  #  import_tasks: ../raffienficiaud.atlassian-bambooagent-install-dmg-role/tasks/main.yml
+  #  dmg_to_install: "{{ cmake_installation }}"
+  #  when: "{{ cmake_version_output_osx.stdout_lines[0] | regex_replace('cmake version (.*)$', '\\1') | version_compare('%d.%d' % (cmake_installation.version.major, cmake_installation.version.minor), '<') }}"
+
+  - name: "[JAVA] Installs CMake from DMG"
+    include_role: 
+      name: raffienficiaud.atlassian-bambooagent-install-dmg-role
+    vars:
+      dmg_to_install: "{{ cmake_installation }}"
     when: "{{ cmake_version_output_osx.stdout_lines[0] | regex_replace('cmake version (.*)$', '\\1') | version_compare('%d.%d' % (cmake_installation.version.major, cmake_installation.version.minor), '<') }}"
 
   - name: '[BAMBOO] cmake post install'

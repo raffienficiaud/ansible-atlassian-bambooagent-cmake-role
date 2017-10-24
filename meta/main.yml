@@ -49,6 +49,4 @@ galaxy_info:
   - installation
   - cmake
 
-dependencies:
-  - raffienficiaud.atlassian-bambooagent-role
-  - raffienficiaud.atlassian-bambooagent-install-dmg-role
+dependencies: []
