@@ -4,7 +4,7 @@
 
 - name: '[CMAKE] Checking that required variables are set'
   fail: msg="{{ item }} is not defined"
-  when: not "{{ item }}"
+  when: item is undefined
   with_items:
     - cmake_installation
     - bambooagent_user
@@ -13,14 +13,18 @@
 - block:
   - name: '[BAMBOO] checks cmake version on OSX'
     shell: /usr/local/bin/cmake --version || cmake --version || echo 'cmake version 0.0'
-    register: cmake_version_output_osx
+    register: cmake_version_output
     when: ansible_distribution=="MacOSX"
 
   - name: '[BAMBOO] checks cmake version on linux'
     shell: "{{bambooagent_userhome}}/usr/local/{{cmake_installation.subfolder}}/bin/cmake --version || cmake --version || echo 'cmake version 0.0'"
-    register: cmake_version_output_linux
+    register: cmake_version_output
     when: ansible_distribution=="Ubuntu"
 
+  - name: '[BAMBOO] checks cmake version on Windows'
+    win_command: cmake --version || cmake --version || echo 'cmake version 0.0'
+    register: cmake_version_output_windows
+    when: ansible_distribution=="Windows"
 
 
 # Installs cmake
@@ -33,30 +37,18 @@
 #
 - block:
 
-  #- name: '[CMAKE] install osx - DMG'
-  #  include: ../../bamboo-agent-install-dmg/tasks/main.yml
-  #  dmg_to_install:
-  #    - "{{ cmake_installation }}"
-  #  when: "{{ cmake_version_output_osx.stdout_lines[0] | regex_replace('cmake version (.*)$', '\\1') | version_compare('%d.%d' % (cmake_installation.version.major, cmake_installation.version.minor), '<') }}"
-
-  #- name: "[JAVA] Installs CMake from DMG"
-  #  import_tasks: ../raffienficiaud.atlassian-bambooagent-install-dmg-role/tasks/main.yml
-  #  dmg_to_install: "{{ cmake_installation }}"
-  #  when: "{{ cmake_version_output_osx.stdout_lines[0] | regex_replace('cmake version (.*)$', '\\1') | version_compare('%d.%d' % (cmake_installation.version.major, cmake_installation.version.minor), '<') }}"
-
-  - name: "[JAVA] Installs CMake from DMG"
+  - name: "[CMAKE] Installs from DMG"
     include_role: 
       name: raffienficiaud.atlassian-bambooagent-install-dmg-role
     vars:
       dmg_to_install: "{{ cmake_installation }}"
-    when: "{{ cmake_version_output_osx.stdout_lines[0] | regex_replace('cmake version (.*)$', '\\1') | version_compare('%d.%d' % (cmake_installation.version.major, cmake_installation.version.minor), '<') }}"
 
-  - name: '[BAMBOO] cmake post install'
+  - name: '[CMAKE] running cmake post install scripts'
     file:
        path=/usr/local/bin/
        state=directory
 
-  - name: '[BAMBOO] install osx - postinstall'
+  - name: '[CMAKE] running cmake post install scripts'
     file:
        path=/usr/local/bin/{{item}}
        state=absent
@@ -66,10 +58,17 @@
      - cpack
      - ccmake
 
-  - name: '[BAMBOO] cmake post install (2)'
+  - name: '[CMAKE] running cmake post install scripts'
     command: /Applications/CMake.app/Contents/bin/cmake-gui --install
 
-  when: ansible_distribution=="MacOSX"
+  # installation folder
+  - name: '[BAMBOO] cmake root dir'
+    set_fact:
+      bamboo_cmake_root_dir_osx: '/usr/local/bin/'
+
+  when: 
+    - ansible_distribution=="MacOSX"
+    - cmake_version_output.stdout_lines[0] | regex_replace('cmake version (.*)$', '\\1') | version_compare('%d.%d' % (cmake_installation.version.major, cmake_installation.version.minor), '<')
 
 
 #
@@ -78,42 +77,83 @@
 #
 #
 - block:
-  - name: '[BAMBOO] install linux - prerequisite'
+  - name: '[CMAKE] create folder local to the bamboo agent'
     file:
        path="{{bambooagent_userhome}}/usr/local"
        state=directory
        mode=555
 
-  - name: '[BAMBOO] cmake install linux - prerequisite 2'
+  - name: '[CMAKE] delete previous local cmake installation'
     file:
        path="{{bambooagent_userhome}}/usr/local/{{cmake_installation.subfolder}}"
        state=absent
 
-  - name: '[BAMBOO] cmake install linux - installation'
+  - name: '[CMAKE] linux installation'
     unarchive:
       src="{{ cmake_installation.file }}"
       dest="{{bambooagent_userhome}}/usr/local"
       copy=yes
 
-  when: "{{ (ansible_distribution=='Ubuntu') and (cmake_version_output_linux.stdout_lines[0] | regex_replace('cmake version (.*)$', '\\1') | version_compare('%d.%d' % (cmake_installation.version.major, cmake_installation.version.minor), '<') ) }}"
+  # installation folder
+  - name: '[BAMBOO] cmake root dir'
+    set_fact:
+      bamboo_cmake_root_dir: '{{bambooagent_userhome}}/usr/local/{{cmake_installation.subfolder | default() }}/bin/'
+
+  when:
+    - ansible_distribution=='Ubuntu'
+    - cmake_version_output.stdout_lines[0] | regex_replace('cmake version (.*)$', '\\1') | version_compare('%d.%d' % (cmake_installation.version.major, cmake_installation.version.minor), '<')
+
+
+#
+#
+# Windows
+#
+#
+- block:
+
+  - name: '[CMAKE] copy the installer'
+    win_copy:
+      src: "{{ cmake_installation.file }}"
+      dest: "{{ ansible_env['TEMP'] }}\\{{cmake_installation.file | basename}}"
+
+  # installs on a default folder
+  - name: '[CMAKE] installation'
+    win_package:
+      path: "{{ ansible_env['TEMP'] }}\\{{cmake_installation.file | basename}}"
+      state: present
+
+  - name: '[JAVA] finding the installation path'
+    win_shell: "(Get-ItemProperty -Path 'HKLM:\\SOFTWARE\\JavaSoft\\Java Development Kit\\1.{{ java_version_major }}' -Name JavaHome).JavaHome"
+    register: java_home_windows_tmp
+
+  - win_reg_stat:
+      path: HKLM:\SOFTWARE\Ktiware\CMake\InstallDir
+    register: bamboo_cmake_root_dir
+
+  when: ansible_os_family=="Windows"
+
+  rescue:
+    - debug: msg="An error occured"
+    - command: /bin/false
+
+  always:
+    # pretty sure that this file will not get cleaned up
+    - file:
+        path: "{{ ansible_env['TEMP'] }}\\{{cmake_installation.file | basename}}"
+        state: absent
+
+  tags: 
+    - cmake 
+
+
+
 
 
 #
 # REGISTER cmake into bamboo capabilities
 #
-- name: '[BAMBOO] cmake root dir linux'
-  set_fact:
-    bamboo_cmake_root_dir_linux: '{{bambooagent_userhome}}/usr/local/{{cmake_installation.subfolder | default() }}/bin/'
 
-- name: '[BAMBOO] cmake root dir osx'
-  set_fact:
-    bamboo_cmake_root_dir_osx: '/usr/local/bin/'
-
-- name: '[BAMBOO] cmake root dir current platform'
-  set_fact:
-    bamboo_cmake_root_dir: "{{ (ansible_distribution=='Ubuntu') | ternary(bamboo_cmake_root_dir_linux, bamboo_cmake_root_dir_osx) }}"
-
-- name: '[BAMBOO] register cmake commands'
+- name: '[BAMBOO] register cmake commands/capabilities'
   set_fact:
     bamboo_capabilities: "{{ bamboo_capabilities | combine({'system.builder.command.' + item:bamboo_cmake_root_dir + item}) }}"
   with_items:
