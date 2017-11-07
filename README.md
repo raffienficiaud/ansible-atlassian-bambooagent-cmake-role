@@ -14,7 +14,7 @@ Role Variables
 | variable | default | meaning |
 |----------|---------|---------|
 |cmake_installation| **required**| the installation definition|
-|bambooagent_user|**required on linux**| the bamboo agent user. |
+|bambooagent_userhome|**required on linux**| the bamboo agent user's home folder. |
 |bamboo_capabilities|**required**| capabilities. |
 
 ### cmake_installation
@@ -47,7 +47,7 @@ Role Variables
     version: "{{ bamboo_cmake_version }}"
   ```
 
-### bambooagent_user
+### bambooagent_userhome
 
 The variable is required due to the fact that the `cmake` installation on Linux goes to a folder `usr/local` that is local to the
 bamboo agent.
@@ -97,6 +97,7 @@ Here is an example on how to use the role for installing on OSX agents.
       # Installs cmake
       - role: bamboo-agent-cmake
         cmake_installation: "{{ bamboo_cmake_installation }}"
+        bambooagent_userhome: "/home/bambooagent/"
   ```
 
 License

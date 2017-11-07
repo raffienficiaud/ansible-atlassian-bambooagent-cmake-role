@@ -7,7 +7,7 @@
   when: item is undefined
   with_items:
     - cmake_installation
-    - bambooagent_user
+    - bambooagent_userhome
 
 # checks if cmake is already there
 - block:
@@ -122,6 +122,7 @@
 - name: '[BAMBOO] cmake root dir Linux'
   set_fact:
     bamboo_cmake_root_dir_linux: '{{bambooagent_userhome}}/usr/local/{{cmake_installation.subfolder | default() }}/bin/'
+  when: ansible_distribution=="Ubuntu"
 
 
 
@@ -145,9 +146,12 @@
 
   # installation folder on windows
   - win_reg_stat:
-      path: HKLM:\SOFTWARE\Ktiware\CMake\InstallDir
+      path: HKLM:\SOFTWARE\Kitware\CMake
+      name: InstallDir
     register: bamboo_cmake_root_dir_windows
 
+  - debug:
+      var: bamboo_cmake_root_dir_windows
   when: ansible_os_family=="Windows"
 
   rescue:
@@ -156,16 +160,15 @@
 
   always:
     # pretty sure that this file will not get cleaned up
-    - file:
-        path: "{{ ansible_env['TEMP'] }}\\{{cmake_installation.file | basename}}"
+    - win_file:
+        path: "{{ ansible_env['TEMP'] }}\\{{cmake_installation.file | basename }}"
         state: absent
 
   tags: 
     - cmake 
 
-
 - set_fact:
-    bamboo_cmake_root_dir: "{{ (ansible_distribution=='Ubuntu') | ternary(bamboo_cmake_root_dir_linux, ((ansible_distribution=='MacOSX') | ternary(bamboo_cmake_root_dir_osx, bamboo_cmake_root_dir_windows) ) ) }}"
+    bamboo_cmake_root_dir: "{{ (ansible_distribution=='Ubuntu') | ternary(bamboo_cmake_root_dir_linux, ((ansible_distribution=='MacOSX') | ternary(bamboo_cmake_root_dir_osx, bamboo_cmake_root_dir_windows.value ) ) ) }}"
 
 - debug:
     var: bamboo_cmake_root_dir
