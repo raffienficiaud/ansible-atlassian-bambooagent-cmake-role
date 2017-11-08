@@ -1,7 +1,7 @@
 Ansible Atlassian Bambooagent CMake role
 ========================================
 
-Installs a particular version of `cmake` into the remotes and declares it on the bamboo capabilities.
+Installs a specific version of `cmake` into the remotes and advertises the `cmake/cpack/ctest` as system builders for the agent's capabilities.
 
 Requirements
 ------------
@@ -15,11 +15,11 @@ Role Variables
 |----------|---------|---------|
 |cmake_installation| **required**| the installation definition|
 |bambooagent_install_root|**required on linux**| the bamboo agent root folder for local programs installation. |
-|bamboo_capabilities|**required**| capabilities. |
+|bamboo_capabilities|**required**| dictionary holding the agent's capabilities. The dictionary will contain additional keys after the run.|
 
 ### cmake_installation
 
-* Linux: On Linux, a tar file is deflated on the remote. The fields `file`, `subfolder` and `version` should be defined. Example:
+* On Linux: a tar file is deflated on the remote. The fields `file`, `subfolder` and `version` should be defined. Example:
 
   ```yaml
   bamboo_cmake_version:
@@ -33,7 +33,8 @@ Role Variables
     version: "{{bamboo_cmake_version}}"
   ```
 
-* OSX: on OSX, it uses the DMG installer, to which 'version' should be added. Example:
+* On OSX: the role uses the DMG installer, to which 'version' should be added. Example:
+
   ```yaml
   bamboo_cmake_version:
     major: 3
