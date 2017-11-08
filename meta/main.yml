@@ -41,6 +41,9 @@ galaxy_info:
   - name: MacOSX
     versions:
      - all
+  - name: Windows
+    versions:
+     - all
 
   galaxy_tags:
   - atlassian

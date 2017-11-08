@@ -7,7 +7,7 @@
   when: item is undefined
   with_items:
     - cmake_installation
-    - bambooagent_userhome
+    - bambooagent_install_root
 
 # checks if cmake is already there
 - block:
@@ -19,7 +19,7 @@
 
 - block:
   - name: '[BAMBOO] checks cmake version on linux'
-    shell: "{{bambooagent_userhome}}/usr/local/{{cmake_installation.subfolder}}/bin/cmake --version || cmake --version || echo 'cmake version 0.0'"
+    shell: "{{bambooagent_install_root}}/usr/local/{{cmake_installation.subfolder}}/bin/cmake --version || cmake --version || echo 'cmake version 0.0'"
     register: cmake_version_output_linux
   
   when: ansible_distribution=="Ubuntu"
@@ -99,19 +99,19 @@
 - block:
   - name: '[CMAKE] create folder local to the bamboo agent'
     file:
-       path="{{bambooagent_userhome}}/usr/local"
+       path="{{bambooagent_install_root}}/usr/local"
        state=directory
        mode=555
 
   - name: '[CMAKE] delete previous local cmake installation'
     file:
-       path="{{bambooagent_userhome}}/usr/local/{{cmake_installation.subfolder}}"
+       path="{{bambooagent_install_root}}/usr/local/{{cmake_installation.subfolder}}"
        state=absent
 
   - name: '[CMAKE] linux installation'
     unarchive:
       src="{{ cmake_installation.file }}"
-      dest="{{bambooagent_userhome}}/usr/local"
+      dest="{{bambooagent_install_root}}/usr/local"
       copy=yes
 
   when:
@@ -121,7 +121,7 @@
 # installation folder on Linux
 - name: '[BAMBOO] cmake root dir Linux'
   set_fact:
-    bamboo_cmake_root_dir_linux: '{{bambooagent_userhome}}/usr/local/{{cmake_installation.subfolder | default() }}/bin/'
+    bamboo_cmake_root_dir_linux: '{{bambooagent_install_root}}/usr/local/{{cmake_installation.subfolder | default() }}/bin/'
   when: ansible_distribution=="Ubuntu"
 
 
