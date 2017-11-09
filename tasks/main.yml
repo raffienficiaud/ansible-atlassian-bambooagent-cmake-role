@@ -31,14 +31,6 @@
   
   when: ansible_distribution=="Windows"
 
-
-- debug:
-    var: cmake_version_output_osx
-- debug:
-    var: cmake_version_output_linux
-- debug:
-    var: cmake_version_output_windows
-
 - set_fact:
     cmake_version_output: "{{ (ansible_distribution=='Ubuntu') | ternary(cmake_version_output_linux, ((ansible_distribution=='MacOSX') | ternary(cmake_version_output_osx, cmake_version_output_windows) ) ) }}"
 
@@ -170,6 +162,11 @@
 - set_fact:
     bamboo_cmake_root_dir: "{{ (ansible_distribution=='Ubuntu') | ternary(bamboo_cmake_root_dir_linux, ((ansible_distribution=='MacOSX') | ternary(bamboo_cmake_root_dir_osx, bamboo_cmake_root_dir_windows.value ) ) ) }}"
 
+# struggled several ours just to be able to add bin\ at the end ... found this solution ...
+- set_fact:
+    bamboo_cmake_root_dir: '{{ bamboo_cmake_root_dir }}bin\'
+  when: ansible_os_family=="Windows"
+
 - debug:
     var: bamboo_cmake_root_dir
 
@@ -181,7 +178,7 @@
 
 - name: '[BAMBOO] register cmake commands/capabilities'
   set_fact:
-    bamboo_capabilities: "{{ bamboo_capabilities | combine({'system.builder.command.' + item:bamboo_cmake_root_dir + item}) }}"
+    bamboo_capabilities: "{{ bamboo_capabilities | combine({'system.builder.command.' + item:bamboo_cmake_root_dir + item + ((ansible_os_family=='Windows') | ternary('.exe','')) }) }}"
   with_items:
     - cmake
     - ctest
