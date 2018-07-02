@@ -74,7 +74,7 @@
 
   when: 
     - ansible_distribution=="MacOSX"
-    - cmake_version_output.stdout_lines[0] | regex_replace('cmake version (.*)$', '\\1') | version_compare('%d.%d' % (cmake_installation.version.major, cmake_installation.version.minor), '<')
+    - (cmake_version_output.stdout_lines[0] | regex_replace('cmake version (.*)$', '\\1')) is version_compare('%d.%d' % (cmake_installation.version.major, cmake_installation.version.minor), '!=')
 
 
 # installation folder on OSX
@@ -108,7 +108,7 @@
 
   when:
     - ansible_distribution=='Ubuntu'
-    - cmake_version_output.stdout_lines[0] | regex_replace('cmake version (.*)$', '\\1') | version_compare('%d.%d' % (cmake_installation.version.major, cmake_installation.version.minor), '<')
+    - (cmake_version_output.stdout_lines[0] | regex_replace('cmake version (.*)$', '\\1')) is version_compare('%d.%d' % (cmake_installation.version.major, cmake_installation.version.minor), '!=')
 
 # installation folder on Linux
 - name: '[BAMBOO] cmake root dir Linux'
