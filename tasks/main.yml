@@ -14,22 +14,25 @@
   - name: '[BAMBOO] checks cmake version on OSX'
     shell: /usr/local/bin/cmake --version || cmake --version || echo 'cmake version 0.0'
     register: cmake_version_output_osx
-  
+
   when: ansible_distribution=="MacOSX"
 
 - block:
   - name: '[BAMBOO] checks cmake version on linux'
     shell: "{{bambooagent_install_root}}/usr/local/{{cmake_installation.subfolder}}/bin/cmake --version || cmake --version || echo 'cmake version 0.0'"
     register: cmake_version_output_linux
-  
+
   when: ansible_distribution=="Ubuntu"
 
 - block:
+  # On Windows the command should be surrounded by " instead of ' for handling the spaces
   - name: '[BAMBOO] checks cmake version on Windows'
-    win_command: cmake --version || cmake --version || echo 'cmake version 0.0'
+    win_shell: '{% raw %}\"C:\Program Files\CMake\bin\cmake.exe\"{% endraw %} --version & cmake --version & echo "cmake version 0.0"'
+    args:
+      executable: cmd
     register: cmake_version_output_windows
-  
-  when: ansible_distribution=="Windows"
+    #ignore_errors: yes
+    when: ansible_os_family=="Windows"
 
 - set_fact:
     cmake_version_output: "{{ (ansible_distribution=='Ubuntu') | ternary(cmake_version_output_linux, ((ansible_distribution=='MacOSX') | ternary(cmake_version_output_osx, cmake_version_output_windows) ) ) }}"
@@ -49,7 +52,7 @@
 - block:
 
   - name: "[CMAKE] Installs from DMG"
-    include_role: 
+    include_role:
       name: raffienficiaud.atlassian-bambooagent-install-dmg-role
     vars:
       dmg_to_install: "{{ cmake_installation }}"
@@ -72,7 +75,7 @@
   - name: '[CMAKE] running cmake post install scripts'
     command: /Applications/CMake.app/Contents/bin/cmake-gui --install
 
-  when: 
+  when:
     - ansible_distribution=="MacOSX"
     - (cmake_version_output.stdout_lines[0] | regex_replace('cmake version (.*)$', '\\1')) is version_compare('%d.%d' % (cmake_installation.version.major, cmake_installation.version.minor), '!=')
 
@@ -156,8 +159,8 @@
         path: "{{ ansible_env['TEMP'] }}\\{{cmake_installation.file | basename }}"
         state: absent
 
-  tags: 
-    - cmake 
+  tags:
+    - cmake
 
 - set_fact:
     bamboo_cmake_root_dir: "{{ (ansible_distribution=='Ubuntu') | ternary(bamboo_cmake_root_dir_linux, ((ansible_distribution=='MacOSX') | ternary(bamboo_cmake_root_dir_osx, bamboo_cmake_root_dir_windows.value ) ) ) }}"
