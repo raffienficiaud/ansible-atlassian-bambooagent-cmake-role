@@ -53,7 +53,7 @@
 
   - name: "[CMAKE] Installs from DMG"
     include_role:
-      name: raffienficiaud.atlassian-bambooagent-install-dmg-role
+      name: atlassian-bambooagent-install-dmg-role
     vars:
       dmg_to_install: "{{ cmake_installation }}"
 

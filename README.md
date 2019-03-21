@@ -58,8 +58,8 @@ Once run, this role declares the following capabilities onto the Bamboo agent in
 
 | capability | value |
 |----------|---------|
-|system.builder.command.cmake(/ctest/cpack)| location of the commands|
-|cmake_version| version of cmake |
+|`system.builder.command.cmake(/ctest/cpack)`| location of the commands|
+|`cmake_version`| version of cmake |
 
 Dependencies
 ------------
@@ -69,7 +69,7 @@ This role relies on the DMG installation role `ansible-atlassian-bambooagent-ins
 Example Playbook
 ----------------
 
-Here is an example on how to use the role for installing on OSX agents. 
+Here is an example on how to use the role for installing on OSX agents.
 
   ```yaml
   - hosts: osx-agents
@@ -82,10 +82,10 @@ Here is an example on how to use the role for installing on OSX agents.
         patch: 1
 
     - bamboo_cmake_installation:
-      file: "/path/to/cmake/installers/cmake-{{bamboo_cmake_version.major}}.{{bamboo_cmake_version.minor}}.{{bamboo_cmake_version.patch}}-Darwin-x86_64.dmg"
-      install_cmd: 'rm -rf /Applications/CMake.app && cp -R -f "${mount}/CMake.app" /Applications/'
-      remove_interactive: True
-      version: "{{ bamboo_cmake_version }}"
+        file: "/path/to/cmake/installers/cmake-{{bamboo_cmake_version.major}}.{{bamboo_cmake_version.minor}}.{{bamboo_cmake_version.patch}}-Darwin-x86_64.dmg"
+        install_cmd: 'rm -rf /Applications/CMake.app && cp -R -f "${mount}/CMake.app" /Applications/'
+        remove_interactive: True
+        version: "{{ bamboo_cmake_version }}"
 
     pre_tasks:
       - name: '[BAMBOO] empty capabilities declaration'
@@ -96,8 +96,9 @@ Here is an example on how to use the role for installing on OSX agents.
 
       # Installs cmake
       - role: raffienficiaud.atlassian-bambooagent-cmake-role
-        cmake_installation: "{{ bamboo_cmake_installation }}"
-        bambooagent_install_root: "/home/bambooagent/"
+        vars:
+          cmake_installation: "{{ bamboo_cmake_installation }}"
+          bambooagent_install_root: "/home/bambooagent/"
   ```
 
 License
