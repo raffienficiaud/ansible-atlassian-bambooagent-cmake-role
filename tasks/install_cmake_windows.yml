@@ -1,0 +1,95 @@
+#
+#
+# Windows
+#
+#
+
+# querying the remote for a previously installed version
+- block:
+  # On Windows the command should be surrounded by " instead of ' for handling the spaces
+  - name: '[BAMBOO] checks cmake version on Windows'
+    win_shell: 'bin\cmake.exe --version || cmake --version || echo "cmake version 0.0"'
+    args:
+      executable: cmd
+      chdir: 'C:\Program Files\CMake'
+    register: cmake_version_output_windows
+    ignore_errors: True
+
+# installation
+- block:
+  - name: '[CMAKE] copy the installer'
+    win_copy:
+      src: "{{ cmake_installation.file }}"
+      dest: "{{ ansible_env['TEMP'] }}\\{{ cmake_installation.file | basename }}"
+
+  # installs on a default folder
+  - name: '[CMAKE] installation'
+    win_package:
+      path: "{{ ansible_env['TEMP'] }}\\{{ cmake_installation.file | basename }}"
+      state: present
+
+  when:
+   - ansible_os_family == "Windows"
+   - ('stdout_lines' not in cmake_version_output_windows) or ((cmake_version_output_windows.stdout_lines[0] | regex_replace('cmake version (\\d+\\.\\d+)\\..*$', '\\1')) is version('%d.%d' % (cmake_installation.version.major, cmake_installation.version.minor), '!='))
+
+  rescue:
+    - debug:
+        msg: "An error occured"
+    - win_command: /bin/false
+
+  always:
+    # pretty sure that this file will not get cleaned up
+    - name: "[CMAKE] removing the installer file"
+      win_file:
+        path: "{{ ansible_env['TEMP'] }}\\{{ cmake_installation.file | basename }}"
+        state: absent
+
+  tags:
+    - cmake
+
+# installation folder on windows
+- name: '[CMAKE] getting the installation folder from the registry'
+  win_reg_stat:
+    path: HKLM:\SOFTWARE\Kitware\CMake
+    name: InstallDir
+  register: bamboo_cmake_root_dir_windows
+
+# PATH fixes
+- name: '[CMAKE] Ensuring that cmake is on the PATH'
+  win_path:
+    elements:
+      - "{{ bamboo_cmake_root_dir_windows.value }}"
+      - "{{ bamboo_cmake_root_dir_windows.value }}/bin"
+      - "{{ bamboo_cmake_root_dir_windows.value }}\\bin"
+    # for all users
+    scope: machine
+    state: absent
+  tags:
+    - cmake
+
+# PATH fixes
+- name: '[CMAKE] Ensuring that cmake is on the PATH'
+  win_path:
+    elements:
+    - '{{ bamboo_cmake_root_dir_windows.value }}bin'
+    # for all users
+    scope: machine
+  tags:
+    - cmake
+
+# registering the binaries and their location
+- name: '[BAMBOO] register cmake commands/capabilities'
+  set_fact:
+    bamboo_capabilities: '{{ ( bamboo_capabilities | default({}) ) | combine( {"system.builder.command." + item.cap: bamboo_cmake_root_dir_windows.value + item.bin} ) }}'
+  loop:
+    - cap: cmake
+      bin: 'bin\cmake.exe'
+    - cap: ctest
+      bin: 'bin\ctest.exe'
+    - cap: cpack
+      bin: 'bin\cpack.exe'
+
+# registering the cmake version
+- name: '[BAMBOO] register cmake version'
+  set_fact:
+    bamboo_capabilities: "{{ ( bamboo_capabilities | default({})) | combine({'cmake_version':('%d.%d' % (cmake_installation.version.major, cmake_installation.version.minor))}) }}"

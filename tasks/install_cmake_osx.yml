@@ -1,0 +1,60 @@
+#
+#
+# OSX
+#
+#
+
+# checks if cmake is already there
+- block:
+  - name: '[BAMBOO] checks cmake version on OSX'
+    shell: /usr/local/bin/cmake --version || cmake --version || echo 'cmake version 0.0'
+    register: cmake_version_output_osx
+
+  when: ansible_distribution == "MacOSX"
+
+
+- block:
+
+  - name: "[CMAKE] Installs from DMG"
+    include_role:
+      name: atlassian-bambooagent-install-dmg-role
+    vars:
+      dmg_to_install: "{{ cmake_installation }}"
+
+  - name: '[CMAKE] running cmake post install scripts'
+    file:
+       path=/usr/local/bin/
+       state=directory
+
+  - name: '[CMAKE] running cmake post install scripts'
+    file:
+       path=/usr/local/bin/{{item}}
+       state=absent
+    with_items:
+     - cmake
+     - ctest
+     - cpack
+     - ccmake
+
+  - name: '[CMAKE] running cmake post install scripts'
+    command: /Applications/CMake.app/Contents/bin/cmake-gui --install
+
+  - name: '[BAMBOO] register cmake commands/capabilities'
+    set_fact:
+      bamboo_capabilities: "{{ ( bamboo_capabilities | default({})) | combine({ 'system.builder.command.' + item: '/usr/local/bin/' + item }) }}"
+    with_items:
+      - cmake
+      - ctest
+      - cpack
+
+  - name: '[BAMBOO] register cmake version'
+    set_fact:
+      bamboo_capabilities: "{{ ( bamboo_capabilities | default({})) | combine({'cmake_version':('%d.%d' % (cmake_installation.version.major, cmake_installation.version.minor))}) }}"
+
+  when:
+    - ansible_distribution=="MacOSX"
+    - (cmake_version_output_osx.stdout_lines[0] | regex_replace('cmake version (.*)$', '\\1')) is version_compare('%d.%d' % (cmake_installation.version.major, cmake_installation.version.minor), '!=')
+
+  rescue:
+    - debug: msg="An error occured"
+    - command: /bin/false

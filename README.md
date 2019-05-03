@@ -1,36 +1,39 @@
 Ansible Atlassian Bambooagent CMake role
 ========================================
 
-Installs a specific version of `cmake` into the remotes and advertises the `cmake/cpack/ctest` as system builders for the agent's capabilities.
+Installs a specific version of `cmake` into the remotes and registers the `cmake/cpack/ctest` as system builders for the Bamboo agent's capabilities.
+Also registers `cmake` on the `PATH` on Windows.
 
 Requirements
 ------------
 
-Currently working only on Ubuntu, OSX and Windows.
+Currently working only on Ubuntu, OSX and Windows. Requires the official installation packages on disk. On Linux, this should be the tar file provided by
+the official CMake download page. On Windows and OSX, those are respectively the `.exe` and `.dmg` packaged installers.
 
 Role Variables
 --------------
 
 | variable | default | meaning |
 |----------|---------|---------|
-|cmake_installation| **required**| the installation definition|
-|bambooagent_install_root|**required on linux**| the bamboo agent root folder for local programs installation. |
-|bamboo_capabilities|**required**| dictionary holding the agent's capabilities. The dictionary will contain additional keys after the run.|
+|`cmake_installation`| **required** | a dictionary describing the installation, see below.|
+|`linux_install_prefix`| `/` | Installation prefix for Linux. |
+|`bamboo_capabilities`| (empty dict) | dictionary holding the agent's capabilities. The dictionary will contain additional keys after the run.|
 
 ### cmake_installation
 
-* On Linux: a tar file is deflated on the remote. The fields `file`, `subfolder` and `version` should be defined. Example:
+* On Linux: the cmake tar file is deflated on the remote under the `linux_install_prefix`. The fields `file`, `subfolder` and `version` of `cmake_installation` should be defined.
+Example:
 
   ```yaml
-  bamboo_cmake_version:
+  local_cmake_version:
     major: 3
     minor: 4
     patch: 1
 
-  bamboo_cmake_installation:
-    file: 'cmake-{{bamboo_cmake_version.major}}.{{bamboo_cmake_version.minor}}.{{bamboo_cmake_version.patch}}-Linux-x86_64.tar.gz'
-    subfolder: cmake-{{bamboo_cmake_version.major}}.{{bamboo_cmake_version.minor}}.{{bamboo_cmake_version.patch}}-Linux-x86_64
-    version: "{{bamboo_cmake_version}}"
+  local_cmake_installation:
+    file: 'cmake-{{ local_cmake_version.major }}.{{ local_cmake_version.minor }}.{{ local_cmake_version.patch }}-Linux-x86_64.tar.gz'
+    subfolder: cmake-{{ local_cmake_version.major }}.{{ local_cmake_version.minor }}.{{ local_cmake_version.patch }}-Linux-x86_64
+    version: "{{ local_cmake_version }}"
   ```
 
 * On OSX: the role uses the DMG installer, to which 'version' should be added. Example:
@@ -41,16 +44,18 @@ Role Variables
     minor: 4
     patch: 1
 
-  bamboo_cmake_installation:
-    file: 'cmake-{{bamboo_cmake_version.major}}.{{bamboo_cmake_version.minor}}.{{bamboo_cmake_version.patch}}-Darwin-x86_64.dmg'
+  local_cmake_installation:
+    file: 'cmake-{{ local_cmake_version.major }}.{{ local_cmake_version.minor }}.{{ local_cmake_version.patch }}-Darwin-x86_64.dmg'
     install_cmd: 'rm -rf /Applications/CMake.app && cp -R -f "${mount}/CMake.app" /Applications/'
     remove_interactive: True
-    version: "{{ bamboo_cmake_version }}"
+    version: "{{ local_cmake_version }}"
   ```
 
-### bambooagent_install_root
+### linux_install_prefix
 
-The variable is required due to the fact that the `cmake` installation on Linux goes to a folder `{{ bambooagent_install_root }}/usr/local` that is local to the bamboo agent. This folder takes precedence over the system path when the agent starts.
+The variable is used to install `cmake` as a relocatable package under this particular prefix. It can go for instance
+`{{ bambooagent_install_root }}/usr/local` that is local to the build agent, and which isolates the binaries being in use from the rest of the
+operating system. This folder should takes precedence over the system path when the agent starts.
 
 ### Capabilities declared by the role
 
@@ -76,13 +81,13 @@ Here is an example on how to use the role for installing on OSX agents.
     vars:
 
     # declares the cmake version and installer
-    - bamboo_cmake_version:
+    - play_cmake_version:
         major: 3
         minor: 7
         patch: 1
 
-    - bamboo_cmake_installation:
-        file: "/path/to/cmake/installers/cmake-{{bamboo_cmake_version.major}}.{{bamboo_cmake_version.minor}}.{{bamboo_cmake_version.patch}}-Darwin-x86_64.dmg"
+    - play_cmake_installation:
+        file: "/path/to/cmake/installers/cmake-{{ play_cmake_version.major }}.{{ play_cmake_version.minor }}.{{ play_cmake_version.patch }}-Darwin-x86_64.dmg"
         install_cmd: 'rm -rf /Applications/CMake.app && cp -R -f "${mount}/CMake.app" /Applications/'
         remove_interactive: True
         version: "{{ bamboo_cmake_version }}"
@@ -95,10 +100,10 @@ Here is an example on how to use the role for installing on OSX agents.
     roles:
 
       # Installs cmake
-      - role: raffienficiaud.atlassian-bambooagent-cmake-role
+      - role: atlassian-bambooagent-cmake-role
         vars:
-          cmake_installation: "{{ bamboo_cmake_installation }}"
-          bambooagent_install_root: "/home/bambooagent/"
+          cmake_installation: "{{ play_cmake_installation }}"
+          linux_install_prefix: "/home/bambooagent/"
   ```
 
 License
