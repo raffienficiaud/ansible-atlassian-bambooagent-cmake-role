@@ -3,11 +3,11 @@
 
 
 - name: '[CMAKE] Checking that required variables are set'
-  fail: msg="{{ item }} is not defined"
+  fail: 
+    msg: "{{ item }} is not defined"
   when: item is undefined
-  with_items:
+  loop:
     - cmake_installation
-    - bambooagent_install_root
 
 - name: "[CMAKE] OSX installation tasks"
   include_tasks: install_cmake_osx.yml

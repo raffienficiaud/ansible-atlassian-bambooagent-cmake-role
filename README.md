@@ -16,12 +16,12 @@ Role Variables
 | variable | default | meaning |
 |----------|---------|---------|
 |`cmake_installation`| **required** | a dictionary describing the installation, see below.|
-|`linux_install_prefix`| `/` | Installation prefix for Linux. |
+|`linux_install_prefix`| `''` | Installation prefix for Linux (defaults to empty string). |
 |`bamboo_capabilities`| (empty dict) | dictionary holding the agent's capabilities. The dictionary will contain additional keys after the run.|
 
 ### cmake_installation
 
-* On Linux: the cmake tar file is deflated on the remote under the `linux_install_prefix`. The fields `file`, `subfolder` and `version` of `cmake_installation` should be defined.
+* On Linux: the cmake tar file is deflated on the remote under the `{{ linux_install_prefix }}/usr/local/cmake-version-specific`. The fields `file`, `subfolder` and `version` of `cmake_installation` should be defined.
 Example:
 
   ```yaml

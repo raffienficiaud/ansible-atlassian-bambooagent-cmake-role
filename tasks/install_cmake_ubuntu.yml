@@ -6,7 +6,7 @@
 
 - block:
   - name: '[BAMBOO] checks cmake version on linux'
-    shell: "{{ linux_install_prefix }}/usr/local/{{cmake_installation.subfolder}}/bin/cmake --version || cmake --version || echo 'cmake version 0.0'"
+    shell: "{{ linux_install_prefix }}/usr/local/{{ cmake_installation.subfolder }}/bin/cmake --version || cmake --version || echo 'cmake version 0.0'"
     register: cmake_version_output_linux
 
   when: ansible_distribution == "Ubuntu"

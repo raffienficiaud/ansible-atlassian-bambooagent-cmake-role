@@ -30,7 +30,9 @@
 
   when:
    - ansible_os_family == "Windows"
-   - ('stdout_lines' not in cmake_version_output_windows) or ((cmake_version_output_windows.stdout_lines[0] | regex_replace('cmake version (\\d+\\.\\d+)\\..*$', '\\1')) is version('%d.%d' % (cmake_installation.version.major, cmake_installation.version.minor), '!='))
+   - ('stdout_lines' not in cmake_version_output_windows) or 
+      ((cmake_version_output_windows.stdout_lines[0] | regex_replace('cmake version (\\d+\\.\\d+)\\..*$', '\\1')) 
+        is version('%d.%d' % (cmake_installation.version.major, cmake_installation.version.minor), '!='))
 
   rescue:
     - debug:
