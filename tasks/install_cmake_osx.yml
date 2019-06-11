@@ -23,13 +23,13 @@
 
   - name: '[CMAKE] running cmake post install scripts'
     file:
-       path=/usr/local/bin/
-       state=directory
+       path: /usr/local/bin/
+       state: directory
 
   - name: '[CMAKE] running cmake post install scripts'
     file:
-       path=/usr/local/bin/{{item}}
-       state=absent
+       path: /usr/local/bin/{{ item }}
+       state: absent
     loop:
      - cmake
      - ctest
@@ -39,23 +39,22 @@
   - name: '[CMAKE] running cmake post install scripts'
     command: /Applications/CMake.app/Contents/bin/cmake-gui --install
 
-  - name: '[BAMBOO] register cmake commands/capabilities'
-    set_fact:
-      bamboo_capabilities: "{{ ( bamboo_capabilities | default({})) | combine({ 'system.builder.command.' + item: '/usr/local/bin/' + item }) }}"
-    loop:
-      - cmake
-      - ctest
-      - cpack
-
-  - name: '[BAMBOO] register cmake version'
-    set_fact:
-      bamboo_capabilities: "{{ ( bamboo_capabilities | default({})) | combine({'cmake_version':('%d.%d' % (cmake_installation.version.major, cmake_installation.version.minor))}) }}"
-
   when:
-    - ansible_distribution=="MacOSX"
-    - (cmake_version_output_osx.stdout_lines[0] | regex_replace('cmake version (.*)$', '\\1')) is version_compare('%d.%d' % (cmake_installation.version.major, cmake_installation.version.minor), '!=')
+    - ansible_distribution == "MacOSX"
+    - (cmake_version_output_osx.stdout_lines.0 | regex_replace('cmake version (.*)$', '\\1')) is version_compare('%d.%d.%d' % (cmake_installation.version.major, cmake_installation.version.minor, cmake_installation.version.patch), '!=')
 
   rescue:
-    - debug: 
-        msg: "An error occured"
-    - command: /bin/false
+    - fail: 
+        msg: "An error occurred"
+
+- name: '[BAMBOO] register cmake commands/capabilities'
+  set_fact:
+    bamboo_capabilities: "{{ ( bamboo_capabilities | default({})) | combine({ 'system.builder.command.' + item: '/usr/local/bin/' + item }) }}"
+  loop:
+    - cmake
+    - ctest
+    - cpack
+
+- name: '[BAMBOO] register cmake version'
+  set_fact:
+    bamboo_capabilities: "{{ ( bamboo_capabilities | default({})) | combine({'cmake_version':('%d.%d' % (cmake_installation.version.major, cmake_installation.version.minor))}) }}"

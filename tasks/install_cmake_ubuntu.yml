@@ -34,23 +34,23 @@
     set_fact:
       bamboo_cmake_root_dir_linux: '{{ linux_install_prefix }}/usr/local/{{ cmake_installation.subfolder | default() }}/bin/'
 
-
-  - name: '[BAMBOO] register cmake commands/capabilities'
-    set_fact:
-      bamboo_capabilities: "{{ ( bamboo_capabilities | default({})) | combine({ 'system.builder.command.' + item: bamboo_cmake_root_dir_linux + item }) }}"
-    with_items:
-      - cmake
-      - ctest
-      - cpack
-
-  - name: '[BAMBOO] register cmake version'
-    set_fact:
-      bamboo_capabilities: "{{ ( bamboo_capabilities | default({})) | combine({'cmake_version':('%d.%d' % (cmake_installation.version.major, cmake_installation.version.minor))}) }}"
-
   when:
     - ansible_distribution == 'Ubuntu'
     - (cmake_version_output_linux.stdout_lines[0] | regex_replace('cmake version (.*)$', '\\1')) is version_compare('%d.%d' % (cmake_installation.version.major, cmake_installation.version.minor), '!=')
 
   rescue:
-    - debug: msg="An error occured"
-    - command: /bin/false
+    - fail: 
+        msg: "An error occured"
+
+- name: '[BAMBOO] register cmake commands/capabilities'
+  set_fact:
+    bamboo_capabilities: "{{ ( bamboo_capabilities | default({})) | combine({ 'system.builder.command.' + item: bamboo_cmake_root_dir_linux + item }) }}"
+  with_items:
+    - cmake
+    - ctest
+    - cpack
+
+- name: '[BAMBOO] register cmake version'
+  set_fact:
+    bamboo_capabilities: "{{ ( bamboo_capabilities | default({})) | combine({'cmake_version':('%d.%d' % (cmake_installation.version.major, cmake_installation.version.minor))}) }}"
+

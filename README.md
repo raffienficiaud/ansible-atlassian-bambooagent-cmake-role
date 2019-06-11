@@ -2,7 +2,7 @@ Ansible Atlassian Bambooagent CMake role
 ========================================
 
 Installs a specific version of `cmake` into the remotes and registers the `cmake/cpack/ctest` as system builders for the Bamboo agent's capabilities.
-Also registers `cmake` on the `PATH` on Windows.
+Also registers `cmake` on the `PATH` on Windows and registers the cmake version and paths in a fact `bamboo_capabilities`.
 
 Requirements
 ------------
@@ -17,7 +17,7 @@ Role Variables
 |----------|---------|---------|
 |`cmake_installation`| **required** | a dictionary describing the installation, see below.|
 |`linux_install_prefix`| `''` | Installation prefix for Linux (defaults to empty string). |
-|`bamboo_capabilities`| (empty dict) | dictionary holding the agent's capabilities. The dictionary will contain additional keys after the run.|
+|`bamboo_capabilities`| (empty dict) | fact dictionary holding the agent's capabilities. The dictionary will contain additional keys after the run.|
 
 ### cmake_installation
 
