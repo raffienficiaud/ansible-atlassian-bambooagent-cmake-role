@@ -19,6 +19,11 @@
        state: directory
        mode: 0555
 
+  - name: '[CMAKE] copy the installer'
+    copy:
+      src: "{{ cmake_installation.file }}"
+      dest: "/tmp/{{ cmake_installation.file | basename }}"
+
   - name: '[CMAKE] delete previous local cmake installation'
     file:
        path: "{{ linux_install_prefix }}/usr/local/{{ cmake_installation.subfolder }}"
@@ -26,21 +31,21 @@
 
   - name: '[CMAKE] linux installation'
     unarchive:
-      src: "{{ cmake_installation.file }}"
+      src: "/tmp/{{ cmake_installation.file | basename }}"
       dest: "{{ linux_install_prefix }}/usr/local"
-      copy: yes
-
-  - name: '[BAMBOO] cmake root dir Linux'
-    set_fact:
-      bamboo_cmake_root_dir_linux: '{{ linux_install_prefix }}/usr/local/{{ cmake_installation.subfolder | default() }}/bin/'
+      remote_src: yes
 
   when:
     - ansible_distribution == 'Ubuntu'
-    - (cmake_version_output_linux.stdout_lines[0] | regex_replace('cmake version (.*)$', '\\1')) is version_compare('%d.%d' % (cmake_installation.version.major, cmake_installation.version.minor), '!=')
+    - (cmake_version_output_linux is failed) or (cmake_version_output_linux.stdout_lines.0 | regex_replace('cmake version (.*)$', '\\1')) is version_compare('%d.%d.%d' % (cmake_installation.version.major, cmake_installation.version.minor, cmake_installation.version.patch), '!=')
 
   rescue:
-    - fail: 
-        msg: "An error occured"
+    - fail:
+        msg: "An error occurred"
+
+- name: '[BAMBOO] cmake root dir Linux'
+  set_fact:
+    bamboo_cmake_root_dir_linux: '{{ linux_install_prefix }}/usr/local/{{ cmake_installation.subfolder | default() }}/bin/'
 
 - name: '[BAMBOO] register cmake commands/capabilities'
   set_fact:
