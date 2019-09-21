@@ -1,0 +1,61 @@
+#
+#
+# Linux
+#
+#
+
+- block:
+  - name: '[BAMBOO] checks cmake version on linux'
+    shell: "{{ linux_install_prefix }}/usr/local/{{ cmake_installation.subfolder }}/bin/cmake --version || cmake --version || echo 'cmake version 0.0'"
+    register: cmake_version_output_linux
+
+  when: ansible_distribution == "Ubuntu"
+
+
+- block:
+  - name: '[CMAKE] create folder local to the bamboo agent'
+    file:
+       path: "{{ linux_install_prefix }}/usr/local"
+       state: directory
+       mode: 0555
+
+  - name: '[CMAKE] copy the installer'
+    copy:
+      src: "{{ cmake_installation.file }}"
+      dest: "/tmp/{{ cmake_installation.file | basename }}"
+
+  - name: '[CMAKE] delete previous local cmake installation'
+    file:
+       path: "{{ linux_install_prefix }}/usr/local/{{ cmake_installation.subfolder }}"
+       state: absent
+
+  - name: '[CMAKE] linux installation'
+    unarchive:
+      src: "/tmp/{{ cmake_installation.file | basename }}"
+      dest: "{{ linux_install_prefix }}/usr/local"
+      remote_src: yes
+
+  when:
+    - ansible_distribution == 'Ubuntu'
+    - (cmake_version_output_linux is failed) or (cmake_version_output_linux.stdout_lines.0 | regex_replace('cmake version (.*)$', '\\1')) is version_compare('%d.%d.%d' % (cmake_installation.version.major, cmake_installation.version.minor, cmake_installation.version.patch), '!=')
+
+  rescue:
+    - fail:
+        msg: "An error occurred"
+
+- name: '[BAMBOO] cmake root dir Linux'
+  set_fact:
+    bamboo_cmake_root_dir_linux: '{{ linux_install_prefix }}/usr/local/{{ cmake_installation.subfolder | default() }}/bin/'
+
+- name: '[BAMBOO] register cmake commands/capabilities'
+  set_fact:
+    bamboo_capabilities: "{{ ( bamboo_capabilities | default({})) | combine({ 'system.builder.command.' + item: bamboo_cmake_root_dir_linux + item }) }}"
+  with_items:
+    - cmake
+    - ctest
+    - cpack
+
+- name: '[BAMBOO] register cmake version'
+  set_fact:
+    bamboo_capabilities: "{{ ( bamboo_capabilities | default({})) | combine({'cmake_version':('%d.%d' % (cmake_installation.version.major, cmake_installation.version.minor))}) }}"
+
