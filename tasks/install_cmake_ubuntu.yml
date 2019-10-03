@@ -37,7 +37,13 @@
 
   when:
     - ansible_distribution == 'Ubuntu'
-    - (cmake_version_output_linux is failed) or (cmake_version_output_linux.stdout_lines.0 | regex_replace('cmake version (.*)$', '\\1')) is version_compare('%d.%d.%d' % (cmake_installation.version.major, cmake_installation.version.minor, cmake_installation.version.patch), '!=')
+    - (cmake_version_output_linux is failed) or
+      (cmake_version_output_linux.stdout_lines.0 |
+       regex_replace('cmake version (.*)$', '\\1')) is
+           version_compare('%d.%d.%d' % (cmake_installation.version.major,
+                                         cmake_installation.version.minor,
+                                         cmake_installation.version.patch),
+                           '!=')
 
   rescue:
     - fail:
@@ -50,7 +56,7 @@
 - name: '[BAMBOO] register cmake commands/capabilities'
   set_fact:
     bamboo_capabilities: "{{ ( bamboo_capabilities | default({})) | combine({ 'system.builder.command.' + item: bamboo_cmake_root_dir_linux + item }) }}"
-  with_items:
+  loop:
     - cmake
     - ctest
     - cpack
@@ -58,4 +64,3 @@
 - name: '[BAMBOO] register cmake version'
   set_fact:
     bamboo_capabilities: "{{ ( bamboo_capabilities | default({})) | combine({'cmake_version':('%d.%d' % (cmake_installation.version.major, cmake_installation.version.minor))}) }}"
-
